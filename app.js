@@ -13,7 +13,7 @@ session(api);
 
 api.use('/',controller);
 
-const port = process.env.PORT || 8060;
+const port = process.env.SERVER_URL || 8060;
 
 
 
