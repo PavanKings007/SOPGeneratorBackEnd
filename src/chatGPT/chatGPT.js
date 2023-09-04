@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const {OpenAI} = require('openai');
+const { aborted } = require('util');
 
 const openai = new OpenAI({
     apiKey:process.env.AI_KEY,
