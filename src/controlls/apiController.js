@@ -13,6 +13,8 @@ const PDFDocument = require('pdfkit');
 
 const nodemailer = require('nodemailer');
 
+const { AbortController } = require('abort-controller');
+
 const fs = require('fs');
 
 const baseURL = process.env.CLIENT_URL;
@@ -47,32 +49,47 @@ router.get('/protected',(req,res)=>{
 
 router.post('/userdetails',(req,res)=>{
     try {
+
+      const controller = new AbortController(); // Create an AbortController
+    const signal = controller.signal;
+
+
         fs.readFile('sample.txt', 'utf-8', async (err, data) => {
             if (err) {
               console.error('Error reading file:', err);
               return;
             }
             
-             const completion = await chatGPT(req.body,data);
-          
-            fs.writeFile('EffizientSOP.doc', completion, (writeErr) => {
-              if (writeErr) {
-                console.error('Error writing file:', writeErr);
+            const timeoutId = setTimeout(() => {
+              controller.abort(); // Abort the request after a timeout (e.g., 5 seconds)
+              console.log('Request aborted');
+            }, 50000000);
+
+            try {
+              const completion = await chatGPT(req.body, data, signal);
+      
+              clearTimeout(timeoutId); // Cancel the timeout since the request has completed
+      
+              fs.writeFile('EffizientSOP.doc', completion, (writeErr) => {
+                if (writeErr) {
+                  console.error('Error writing file:', writeErr);
                   return;
                 }
               });
-              
+      
               const pdf = new PDFDocument();
               pdf.pipe(fs.createWriteStream('EffizientSOP.pdf'));
-              
+      
               pdf.text(completion);
-              pdf.end()
-              
-              
-              
-              res.json({completion});
-              
-            });  
+              pdf.end();
+      
+              res.json({ completion });
+            } catch (error) {
+              console.log(error);
+              clearTimeout(timeoutId); // Cancel the timeout on error
+            }
+          });
+            
           } 
           catch (error) {
             console.log(error);
